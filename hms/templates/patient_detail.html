@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}{{ patient.name }}{% endblock %}
+{% block breadcrumb %}<a href="{{ url_for('main.patients') }}">Patients</a> / {{ patient.patient_code }}{% endblock %}
+{% block content %}
+<div class="page-heading">
+  <div><div class="eyebrow">PATIENT PROFILE · {{ patient.patient_code }}</div><h1>{{ patient.name }}</h1><p class="muted">Registered {{ patient.registered_at[:10] }}</p></div>
+  <a class="button secondary" href="{{ url_for('main.patients') }}">← Patient directory</a>
+</div>
+<div class="detail-grid">
+  <article class="panel details-card">
+    <div class="panel-heading"><div><div class="eyebrow">CONTACT DETAILS</div><h2>Patient information</h2></div><span class="table-avatar large">{{ patient.name[0] }}</span></div>
+    <div class="detail-list">
+      <div><small>AGE</small><b>{{ patient.age }} years</b></div><div><small>PHONE</small><b>{{ patient.phone }}</b></div>
+      <div><small>EMAIL</small><b>{{ patient.email or "Not provided" }}</b></div><div><small>EMERGENCY CONTACT</small><b>{{ patient.emergency_contact }}</b></div>
+      <div class="detail-wide"><small>ADDRESS</small><b>{{ patient.address }}</b></div>
+    </div>
+    {% if g.user.role in ['Admin','Receptionist'] %}
+    <details class="edit-details"><summary>Edit patient details</summary>
+      <form method="post" action="{{ url_for('main.update_patient',patient_id=patient.id) }}" class="form-grid edit-patient-form">
+        <label class="span-2">Full name<input name="name" maxlength="100" value="{{ patient.name }}" required></label>
+        <label>Age<input type="number" name="age" min="0" max="120" value="{{ patient.age }}" required></label>
+        <label>Phone<input name="phone" maxlength="30" value="{{ patient.phone }}" required></label>
+        <label>Email<input type="email" name="email" maxlength="120" value="{{ patient.email }}"></label>
+        <label>Emergency contact<input name="emergency_contact" maxlength="30" value="{{ patient.emergency_contact }}" required></label>
+        <label class="span-2">Address<textarea name="address" maxlength="250" rows="2" required>{{ patient.address }}</textarea></label>
+        <div class="span-2"><button class="button primary">Save patient details</button></div>
+      </form>
+    </details>
+    {% endif %}
+  </article>
+  {% if g.user.role in ['Admin','Doctor'] %}
+  <article class="panel">
+    <div class="panel-heading"><div><div class="eyebrow">CONFIDENTIAL · AUTHORIZED STAFF</div><h2>Visit history</h2></div></div>
+    <div class="record-list">
+      {% for record in records %}
+      <div class="record-entry"><div class="record-date">{{ record.visit_date }}</div><div><b>{{ record.diagnosis }}</b><small>{{ record.symptoms }} · {{ record.doctor_name }}</small>{% if record.prescription %}<p><b>Prescription:</b> {{ record.prescription }}</p>{% endif %}{% if record.follow_up %}<small>Follow-up: {{ record.follow_up }}</small>{% endif %}</div></div>
+      {% else %}<div class="empty">No consultation records are available.</div>{% endfor %}
+    </div>
+  </article>
+  {% endif %}
+</div>
+{% endblock %}

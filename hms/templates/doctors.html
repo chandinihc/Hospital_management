@@ -1,0 +1,40 @@
+{% extends "base.html" %}{% block title %}Care team{% endblock %}{% block breadcrumb %}Care team{% endblock %}
+{% block content %}
+<div class="page-heading"><div><div class="eyebrow">CLINICAL TEAM</div><h1>Care team</h1><p class="muted">Manage specialties, departments, and doctor availability.</p></div><span class="pill-count">{{ doctors|length }} doctors</span></div>
+<div class="content-grid">
+  <section class="panel form-panel"><div class="panel-heading"><div><div class="eyebrow">TEAM DIRECTORY</div><h2>Add a doctor</h2></div><span class="section-symbol teal">✚</span></div>
+    <form method="post" class="form-grid">
+      <label class="span-2">Doctor name<input name="name" required maxlength="100" placeholder="Dr. Full Name"></label>
+      <label>Specialization<input name="specialization" required maxlength="100" placeholder="e.g. Cardiology"></label>
+      <label>Department<input name="department" required maxlength="100" placeholder="Department"></label>
+      <label>Phone<input name="phone" required maxlength="30" placeholder="Contact number"></label>
+      <label>Email<input type="email" name="email" maxlength="120" placeholder="name@example.com"></label>
+      <label class="span-2">Availability schedule<input name="availability" required maxlength="120" placeholder="Mon-Fri, 09:00-14:00"></label>
+      <div class="span-2"><button class="button primary">Add to care team →</button></div>
+    </form>
+  </section>
+  <section class="team-grid">
+    {% for doctor in doctors %}
+    <article class="panel doctor-card">
+      <div class="doctor-top"><div class="doctor-avatar">{{ doctor.name.replace("Dr. ","")[0] }}</div><span class="status completed">Active</span></div>
+      <h2>{{ doctor.name }}</h2><div class="doctor-specialty">{{ doctor.specialization }}</div>
+      <div class="doctor-meta"><span>▧ {{ doctor.department }}</span><span>◷ {{ doctor.availability }}</span><span>☎ {{ doctor.phone }}</span>{% if doctor.email %}<span>✉ {{ doctor.email }}</span>{% endif %}</div>
+      {% if g.user.role == 'Admin' %}
+      <details class="doctor-edit">
+        <summary>Edit profile & schedule</summary>
+        <form method="post" action="{{ url_for('main.update_doctor',doctor_id=doctor.id) }}" class="form-grid doctor-edit-form">
+          <label class="span-2">Doctor name<input name="name" maxlength="100" value="{{ doctor.name }}" required></label>
+          <label>Specialization<input name="specialization" maxlength="100" value="{{ doctor.specialization }}" required></label>
+          <label>Department<input name="department" maxlength="100" value="{{ doctor.department }}" required></label>
+          <label>Phone<input name="phone" maxlength="30" value="{{ doctor.phone }}" required></label>
+          <label>Email<input type="email" name="email" maxlength="120" value="{{ doctor.email }}"></label>
+          <label class="span-2">Availability schedule<input name="availability" maxlength="120" value="{{ doctor.availability }}" required></label>
+          <div class="span-2"><button class="button secondary">Save doctor profile</button></div>
+        </form>
+      </details>
+      {% endif %}
+    </article>
+    {% else %}<div class="panel empty">No doctors in the directory.</div>{% endfor %}
+  </section>
+</div>
+{% endblock %}

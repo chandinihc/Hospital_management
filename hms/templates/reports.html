@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Reports{% endblock %}
+{% block breadcrumb %}Reports{% endblock %}
+{% block content %}
+<div class="page-heading"><div><div class="eyebrow">HOSPITAL PERFORMANCE</div><h1>Reports & analytics</h1><p class="muted">Summaries calculated from data stored in your workspace.</p></div></div>
+<form method="get" class="panel filter-bar">
+  <label>From<input type="date" name="start" value="{{ start }}" required></label>
+  <label>To<input type="date" name="end" value="{{ end }}" required></label>
+  <button class="button primary">Apply dates →</button>
+</form>
+<section class="stat-grid report-stats">
+  <article class="stat-card"><div class="stat-top"><span class="stat-icon violet">▦</span><span class="stat-label">APPOINTMENTS IN RANGE</span></div><div class="stat-number">{{ appointments_count }}</div><div class="stat-foot"><span class="stat-note">{{ start }} – {{ end }}</span></div></article>
+  <article class="stat-card"><div class="stat-top"><span class="stat-icon blue">♡</span><span class="stat-label">NEW REGISTRATIONS</span></div><div class="stat-number">{{ registrations_count }}</div><div class="stat-foot"><span class="stat-note">Patient records created in range</span></div></article>
+  <article class="stat-card"><div class="stat-top"><span class="stat-icon green">₹</span><span class="stat-label">PAYMENTS RECEIVED</span></div><div class="stat-number compact-number">₹{{ "%.2f"|format(revenue.paid) }}</div><div class="stat-foot"><span class="stat-note">Recorded in range</span></div></article>
+  <article class="stat-card"><div class="stat-top"><span class="stat-icon amber">＄</span><span class="stat-label">OUTSTANDING BILLS</span></div><div class="stat-number compact-number">₹{{ "%.2f"|format(revenue.outstanding) }}</div><div class="stat-foot"><span class="stat-note">Remaining from invoices in range</span></div></article>
+</section>
+<section class="stat-grid period-stats">
+  <article class="panel period-card"><span class="stat-icon teal">◷</span><div><small>APPOINTMENTS TODAY</small><b>{{ daily_count }}</b></div></article>
+  <article class="panel period-card"><span class="stat-icon blue">▦</span><div><small>APPOINTMENTS THIS MONTH</small><b>{{ monthly_count }}</b></div></article>
+</section>
+<section class="dashboard-columns">
+  <article class="panel"><div class="panel-heading"><div><div class="eyebrow">DAILY ACTIVITY</div><h2>Appointment trend</h2></div></div>
+    {% if trend %}<div class="bar-chart">{% for item in trend %}<div class="bar-item"><div class="bar-value">{{ item.count }}</div><div class="bar" title="{{ item.day }}: {{ item.count }} appointments" style="height:{{ item.height }}px"></div><small>{{ item.day[5:] }}</small></div>{% endfor %}</div>
+    {% else %}<div class="empty">No appointments in this date range.</div>{% endif %}
+  </article>
+  <article class="panel"><div class="panel-heading"><div><div class="eyebrow">OPERATIONS</div><h2>Inventory & admissions</h2></div></div>
+    <div class="ops-metric"><span class="stat-icon teal">✚</span><span><small>MEDICINE BATCHES</small><b>{{ inventory.medicines }} <small>batches</small></b></span></div>
+    <div class="ops-metric"><span class="stat-icon blue">▥</span><span><small>UNITS IN STOCK</small><b>{{ inventory.units }} <small>units</small></b></span></div>
+    <div class="ops-metric"><span class="stat-icon violet">▧</span><span><small>CURRENT ADMISSIONS</small><b>{{ admissions }} <small>occupied beds</small></b></span></div>
+    <p class="form-footnote">Inventory and admissions reflect current stored records.</p>
+  </article>
+</section>
+{% endblock %}
