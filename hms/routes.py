@@ -1,11 +1,9 @@
 from datetime import date, datetime, timedelta
 from functools import wraps
-from sqlite3 import IntegrityError
-
 from flask import Blueprint, abort, flash, g, redirect, render_template, request, session, url_for
 from werkzeug.security import check_password_hash
 
-from .db import get_db
+from .db import INTEGRITY_ERRORS, get_db
 
 bp = Blueprint("main", __name__)
 ACCESS = {
@@ -92,6 +90,11 @@ def index():
     return redirect(url_for("main.dashboard") if g.user else url_for("main.login"))
 
 
+@bp.route("/healthz")
+def health_check():
+    return {"status": "ok"}
+
+
 @bp.route("/login", methods=("GET", "POST"))
 def login():
     if g.user:
@@ -159,7 +162,9 @@ def patients():
             flash(str(error), "error")
     query = request.args.get("q", "").strip()
     rows = db.execute(
-        "SELECT * FROM patients WHERE name LIKE ? OR patient_code LIKE ? OR phone LIKE ? ORDER BY registered_at DESC",
+        "SELECT * FROM patients WHERE LOWER(name) LIKE LOWER(?) "
+        "OR LOWER(patient_code) LIKE LOWER(?) OR LOWER(phone) LIKE LOWER(?) "
+        "ORDER BY registered_at DESC",
         (f"%{query}%", f"%{query}%", f"%{query}%"),
     ).fetchall()
     return page("patients.html", patients=rows, query=query)
@@ -289,8 +294,8 @@ def appointments():
             db.commit()
             flash("Appointment booked.", "success")
             return redirect(url_for("main.appointments"))
-        except (ValueError, IntegrityError) as error:
-            if isinstance(error, IntegrityError):
+        except (ValueError, *INTEGRITY_ERRORS) as error:
+            if isinstance(error, INTEGRITY_ERRORS):
                 db.rollback()
                 flash("That doctor already has an appointment at this time.", "error")
             else:
@@ -340,9 +345,9 @@ def reschedule(appointment_id):
             return redirect(url_for("main.appointments"))
         db.commit()
         flash("Appointment rescheduled.", "success")
-    except (ValueError, IntegrityError) as error:
+    except (ValueError, *INTEGRITY_ERRORS) as error:
         db.rollback()
-        flash("That doctor already has an appointment at this time." if isinstance(error, IntegrityError) else str(error), "error")
+        flash("That doctor already has an appointment at this time." if isinstance(error, INTEGRITY_ERRORS) else str(error), "error")
     return redirect(url_for("main.appointments"))
 
 
@@ -408,10 +413,15 @@ def billing():
             paid = money("paid", "Initial payment")
             if paid > total:
                 raise ValueError("Initial payment cannot exceed the bill total.")
-            cur = db.execute("INSERT INTO bills(patient_id,subtotal,discount,tax,total,paid) VALUES(?,?,?,?,?,?)", (patient_id, subtotal, discount, tax, total, paid))
-            db.executemany("INSERT INTO bill_items(bill_id,description,amount) VALUES(?,?,?)", [(cur.lastrowid, *item) for item in items])
+            cur = db.execute(
+                "INSERT INTO bills(patient_id,subtotal,discount,tax,total,paid) "
+                "VALUES(?,?,?,?,?,?) RETURNING id",
+                (patient_id, subtotal, discount, tax, total, paid),
+            )
+            bill_id = cur.fetchone()["id"]
+            db.executemany("INSERT INTO bill_items(bill_id,description,amount) VALUES(?,?,?)", [(bill_id, *item) for item in items])
             db.commit()
-            flash(f"Invoice #{cur.lastrowid} generated.", "success")
+            flash(f"Invoice #{bill_id} generated.", "success")
             return redirect(url_for("main.billing"))
         except ValueError as error:
             flash(str(error), "error")
@@ -474,9 +484,9 @@ def pharmacy():
             db.commit()
             flash("Pharmacy inventory updated.", "success")
             return redirect(url_for("main.pharmacy"))
-        except (ValueError, IntegrityError) as error:
+        except (ValueError, *INTEGRITY_ERRORS) as error:
             db.rollback()
-            flash("That batch number already exists." if isinstance(error, IntegrityError) else str(error), "error")
+            flash("That batch number already exists." if isinstance(error, INTEGRITY_ERRORS) else str(error), "error")
     rows = db.execute("SELECT * FROM medicines ORDER BY expiry_date").fetchall()
     cutoff = (date.today() + timedelta(days=60)).isoformat()
     return page("pharmacy.html", medicines=rows, cutoff=cutoff)
@@ -567,9 +577,9 @@ def reports():
         start, end = (date.today() - timedelta(days=29)).isoformat(), date.today().isoformat()
     appointments_count = db.execute("SELECT COUNT(*) FROM appointments WHERE appointment_date BETWEEN ? AND ?", (start,end)).fetchone()[0]
     daily_count = db.execute("SELECT COUNT(*) FROM appointments WHERE appointment_date=?", (date.today().isoformat(),)).fetchone()[0]
-    monthly_count = db.execute("SELECT COUNT(*) FROM appointments WHERE strftime('%Y-%m',appointment_date)=?", (date.today().strftime("%Y-%m"),)).fetchone()[0]
-    registrations_count = db.execute("SELECT COUNT(*) FROM patients WHERE date(registered_at) BETWEEN ? AND ?", (start,end)).fetchone()[0]
-    revenue = db.execute("SELECT COALESCE(SUM(paid),0) paid,COALESCE(SUM(total-paid),0) outstanding FROM bills WHERE date(created_at) BETWEEN ? AND ?", (start,end)).fetchone()
+    monthly_count = db.execute("SELECT COUNT(*) FROM appointments WHERE substr(appointment_date,1,7)=?", (date.today().strftime("%Y-%m"),)).fetchone()[0]
+    registrations_count = db.execute("SELECT COUNT(*) FROM patients WHERE substr(registered_at,1,10) BETWEEN ? AND ?", (start,end)).fetchone()[0]
+    revenue = db.execute("SELECT COALESCE(SUM(paid),0) paid,COALESCE(SUM(total-paid),0) outstanding FROM bills WHERE substr(created_at,1,10) BETWEEN ? AND ?", (start,end)).fetchone()
     trend_rows = db.execute("SELECT appointment_date day,COUNT(*) count FROM appointments WHERE appointment_date BETWEEN ? AND ? GROUP BY appointment_date ORDER BY appointment_date", (start,end)).fetchall()
     max_count = max((row["count"] for row in trend_rows), default=1)
     trend = [{"day": row["day"], "count": row["count"], "height": max(12, round(row["count"] / max_count * 120))} for row in trend_rows]

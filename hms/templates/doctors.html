@@ -4,6 +4,7 @@
 <div class="content-grid">
   <section class="panel form-panel"><div class="panel-heading"><div><div class="eyebrow">TEAM DIRECTORY</div><h2>Add a doctor</h2></div><span class="section-symbol teal">✚</span></div>
     <form method="post" class="form-grid">
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <label class="span-2">Doctor name<input name="name" required maxlength="100" placeholder="Dr. Full Name"></label>
       <label>Specialization<input name="specialization" required maxlength="100" placeholder="e.g. Cardiology"></label>
       <label>Department<input name="department" required maxlength="100" placeholder="Department"></label>
@@ -23,6 +24,7 @@
       <details class="doctor-edit">
         <summary>Edit profile & schedule</summary>
         <form method="post" action="{{ url_for('main.update_doctor',doctor_id=doctor.id) }}" class="form-grid doctor-edit-form">
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <label class="span-2">Doctor name<input name="name" maxlength="100" value="{{ doctor.name }}" required></label>
           <label>Specialization<input name="specialization" maxlength="100" value="{{ doctor.specialization }}" required></label>
           <label>Department<input name="department" maxlength="100" value="{{ doctor.department }}" required></label>

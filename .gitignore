@@ -1,6 +1,7 @@
 .venv/
 venv/
 env/
+.vercel/
 __pycache__/
 *.py[cod]
 .env
@@ -11,9 +12,12 @@ instance/*.sqlite*
 *.sqlite
 *.sqlite3
 *.db
+*.dump
+*.backup
 node_modules/
 dist/
 build/
 .pytest_cache/
 .coverage
 htmlcov/
+.neon

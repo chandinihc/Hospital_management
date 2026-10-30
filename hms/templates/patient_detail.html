@@ -17,6 +17,7 @@
     {% if g.user.role in ['Admin','Receptionist'] %}
     <details class="edit-details"><summary>Edit patient details</summary>
       <form method="post" action="{{ url_for('main.update_patient',patient_id=patient.id) }}" class="form-grid edit-patient-form">
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <label class="span-2">Full name<input name="name" maxlength="100" value="{{ patient.name }}" required></label>
         <label>Age<input type="number" name="age" min="0" max="120" value="{{ patient.age }}" required></label>
         <label>Phone<input name="phone" maxlength="30" value="{{ patient.phone }}" required></label>

@@ -22,7 +22,8 @@
     </nav>
     <div class="sidebar-bottom">
       <div class="help-card"><span class="help-badge">i</span><strong>Need a hand?</strong><p>Demo data is fictional and stored locally.</p></div>
-      <div class="profile-row"><div class="avatar">{{ g.user.username[0]|upper }}</div><div class="profile-info"><strong>{{ g.user.username|title }}</strong><small>{{ g.user.role }}</small></div><form method="post" action="{{ url_for('main.logout') }}"><button class="logout" title="Sign out" aria-label="Sign out">↗</button></form></div>
+      <div class="profile-row"><div class="avatar">{{ g.user.username[0]|upper }}</div><div class="profile-info"><strong>{{ g.user.username|title }}</strong><small>{{ g.user.role }}</small></div><form method="post" action="{{ url_for('main.logout') }}">
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="logout" title="Sign out" aria-label="Sign out">↗</button></form></div>
     </div>
   </aside>
   <main class="main-content">
